@@ -1,0 +1,10 @@
+jupyter
+pandas
+numpy
+torch
+torchvision
+scipy
+fastai
+tqdm
+xgboost
+matplotlib
