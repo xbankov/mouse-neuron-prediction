@@ -1,8 +1,10 @@
 notebook
-pandas
+jupyter
 numpy
-torch
-torchvision
 scipy
 tqdm
 matplotlib
+torchvision
+torch
+scikit-learn
+wandb
