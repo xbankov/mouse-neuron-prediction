@@ -112,28 +112,12 @@ if __name__ == "__main__":
 
         for epoch in range(num_epochs):
             pbar: Any = tqdm(train_dataloader)
-            pbar.set_description(
-                f"Epochs[{epoch}/{num_epochs}]"
-            )
             losses, accuracy, f1 = train(model, criterion, optimizer, pbar)
+            val_losses, val_accuracy, val_f1 = evaluate(model, val_dataloader, criterion)
 
-            if i == len(pbar) - 1:
-                pbar.set_description(
-                    f"Epochs[{epoch}/{num_epochs}] | "
-                    f"Train loss: {train_loss.item():0.2f} | "
-                    f"Accuracy: {accuracy:0.2f} | "
-                    f"F1 Score: {f1:0.2f} | "
-                    f"Val loss: {val_loss:0.2f} | "
-                    f"Evaluating ... "
-                )
-                validation_losses, val_accuracy, f1_score = evaluate(model, val_dataloader, criterion)
-                pbar.set_description(
-                    f"Epochs[{epoch}/{num_epochs}] | "
-                    f"Train loss: {train_loss.item():0.2f} | "
-                    f"Accuracy: {accuracy:0.2f} | "
-                    f"F1 Score: {f1:0.2f} | "
-                    f"Val loss: {np.mean(validation_losses):0.2f} | "
-                    f"Val Accuracy: {val_accuracy:0.2f} | "
-                    f"Val F1 Score: {f1_score:0.2f}"
-                )
+            pbar.set_description(
+                f"Epochs[{epoch}/{num_epochs}] | "
+                f"Train F1 Score: {f1:0.2f} | "
+                f"Validation F1 Score: {val_f1:0.2f}")
+
     wandb.finish()
