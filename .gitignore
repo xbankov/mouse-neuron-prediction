@@ -108,3 +108,5 @@ raw_data/
 models/
 .idea/
 /6845348.zip
+!/wandb/
+/wandb/
