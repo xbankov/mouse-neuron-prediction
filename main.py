@@ -106,7 +106,10 @@ def main(args):
         logging.debug(f"#batches validation dataset: {len(val_dataloader)}")
 
         # Create the model and move the model to GPU if available
-        model = PointCloudNet(num_classes=labels_count, num_neurons=numpy_point_cloud.shape[1]).to(device)
+        model = PointCloudNet(num_classes=labels_count,
+                              num_neurons=numpy_point_cloud.shape[1],
+                              channels=args.channels
+                              ).to(device)
 
         if args.wandb:
             wandb.watch(model)
@@ -141,5 +144,6 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for training and evaluation.")
     parser.add_argument("--kfold", default=5, type=int, help="Number of splits in KFold CV.")
     parser.add_argument("--lr", default=0.001, type=float, help="Learning rate for the Adam optimizer.")
+    parser.add_argument("--channels", default=4, type=int, help="Channel multiplayer for convolutional layers.")
     parser.add_argument("--wandb", action="store_true", help="Log metrics into WANDB.")
     main(parser.parse_args())
