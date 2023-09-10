@@ -11,7 +11,7 @@ class PointCloudNet(nn.Module):
         self.channels = channels
         self.num_neurons = num_neurons
 
-        self.conv1 = nn.Conv1d(4 * channels, 8 * channels, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv1d(4, 8 * channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv1d(8 * channels, 16 * channels, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv1d(16 * channels, 32 * channels, kernel_size=3, stride=1, padding=1)
         self.conv4 = nn.Conv1d(32 * channels, 32 * channels, kernel_size=3, stride=1, padding=1)
