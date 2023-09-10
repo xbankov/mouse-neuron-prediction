@@ -78,9 +78,8 @@ def main(args):
                                                labels_int[test_indices],
                                                transform=transform)
 
-    # # K-fold cross-validation on 90% of data
-    k = args.kfold
-    kf = KFold(n_splits=k, shuffle=True, random_state=42)
+    # # K-fold cross-validation
+    kf = KFold(n_splits=args.kfold, shuffle=True, random_state=42)
 
     logger.info("Training ...")
     # Show random accuracy for the comparison

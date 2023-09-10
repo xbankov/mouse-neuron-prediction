@@ -105,15 +105,10 @@ def load_mat(path: Path) -> Tuple[ndarray, ndarray]:
 
 
 class MouseBrainPointCloudDataset(Dataset):
-    def __init__(self, data, labels, transform=None, oversample=True):
+    def __init__(self, data, labels, transform=None):
         self.transform = transform
         self.data = data
         self.labels = labels
-
-        # Perform oversampling here (e.g., using SMOTE)
-        if oversample:
-            oversampler = SMOTE(random_state=42)
-            self.data, self.labels = oversampler.fit_resample(data, labels)
 
     def __len__(self):
         return len(self.data)
