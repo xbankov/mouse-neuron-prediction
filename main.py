@@ -130,14 +130,18 @@ def main(args):
 
         t_loss = 0.0
         v_loss = 0.0
+
+        t_f1 = 0.0
+        v_f1 = 0.0
         for epoch in range(args.epochs):
             pbar: Any = tqdm(train_dataloader)
 
             epoch_str = f"[Epochs: {epoch} / {args.epochs}]"
             loss_str = f"[Avg.Loss: {t_loss: 0.2f} |{v_loss: 0.2f}]"
             acc_str = f"[Acc: {t_acc:0.2f}%|{v_acc:0.2f}%]"
+            f1_str = f"[F1: {t_f1:0.2f}%|{v_f1:0.2f}%]"
 
-            pbar_prefix = epoch_str + loss_str + acc_str
+            pbar_prefix = epoch_str + loss_str + acc_str + f1_str
             t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix, args, device)
             v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion, args, device)
 
