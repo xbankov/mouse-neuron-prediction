@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import numpy as np
 from numpy import ndarray
@@ -48,7 +48,6 @@ def transform_labels(labels_mat, root_dir):
     return image_idx_to_label, label_to_int, int_to_label
 
 
-def load_mat(path: Path) -> tuple[ndarray, ndarray]:
     save_path_spatial = path.parent / (path.stem + "_spatial.npy")
     save_path_responses = path.parent / (path.stem + "_responses.npy")
     save_path_labels = path.parent / (path.stem + "_labels.npy")
