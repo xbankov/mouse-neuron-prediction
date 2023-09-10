@@ -4,7 +4,7 @@ import wandb
 from sklearn.metrics import accuracy_score, f1_score
 
 
-def evaluate(model, dataloader, criterion):
+def evaluate(model, dataloader, criterion, args):
     model.eval()
     losses = []
     y_preds = []
@@ -21,11 +21,11 @@ def evaluate(model, dataloader, criterion):
 
     accuracy = accuracy_score(y_trues, y_preds)
     f1 = f1_score(y_trues, y_preds, average='macro')
-
-    wandb.log({
-        "Val Loss": np.mean(losses),
-        "Val Accuracy": accuracy,
-        "Val F1 Score": f1,
-    })
+    if args.wandb:
+        wandb.log({
+            "Val Loss": np.mean(losses),
+            "Val Accuracy": accuracy,
+            "Val F1 Score": f1,
+        })
 
     return np.mean(losses), accuracy, f1

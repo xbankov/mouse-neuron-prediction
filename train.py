@@ -4,7 +4,7 @@ import wandb
 from sklearn.metrics import accuracy_score, f1_score
 
 
-def train(model, criterion, optimizer, pbar, pbar_prefix):
+def train(model, criterion, optimizer, pbar, pbar_prefix, args):
     model.train()
     losses = []
     y_preds = []
@@ -27,11 +27,11 @@ def train(model, criterion, optimizer, pbar, pbar_prefix):
     accuracy = accuracy_score(y_trues, y_preds)
     f1 = f1_score(y_trues, y_preds, average='macro')
     loss = np.mean(losses)
-
-    wandb.log({
-        "Train Loss": loss,
-        "Train Accuracy": accuracy,
-        "Train F1 Score": f1,
-    })
+    if args.wandb:
+        wandb.log({
+            "Train Loss": loss,
+            "Train Accuracy": accuracy,
+            "Train F1 Score": f1,
+        })
 
     return loss, accuracy, f1

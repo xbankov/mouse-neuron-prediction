@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split, KFold
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from dataset import load_mat, MouseBrainPointCloudDataset
+from dataset import load_mat, MouseBrainPointCloudDataset, transform_labels
 from evaluate import evaluate
 from models import PointCloudNet
 from train import train
@@ -49,31 +49,26 @@ def main(args):
 
     logger.info("Loading data ...")
     numpy_point_cloud, raw_labels = load_mat(path)
-
     transform = transforms.Compose([transforms.ToTensor()])
 
-    # Labels transformation
-    labels = np.array([a[0] for a in labels_mat["class_names"].flatten()])
-    labels_count = len(np.unique(labels))
-    labels_int = list(map(int, np.arange(labels_count)))
-    label_to_int = dict(zip(labels, labels_int))
-    int_to_label = dict(zip(labels_int, labels))
-
-    with open(root_dir / "label_to_int.json", "w") as fp:
-        json.dump(label_to_int, fp)
-    with open(root_dir / "int_to_label.json", "w") as fp:
-        json.dump(int_to_label, fp)
-
-    image_labels = np.take(labels, labels_mat["class_assignment"]).ravel()
-    image_idx = np.arange(len(labels_mat["class_assignment"][0]))
-    image_to_idx = dict(zip(image_idx, image_labels))
-
-    labels_str = np.vectorize(image_to_idx.get)(raw_labels)
+    image_idx_to_label, label_to_int, int_to_label = transform_labels(labels_mat, root_dir)
+    labels_count = len(label_to_int.keys())
+    labels_str = np.vectorize(image_idx_to_label.get)(raw_labels)
     labels_int = np.vectorize(label_to_int.get)(labels_str)
 
     indices = np.arange(len(labels_int))
 
-    train_val_indices, test_indices = train_test_split(indices, test_size=0.1, random_state=42)
+    train_val_indices_path = root_dir / "train_val_indices.npy"
+    test_indices_path = root_dir / "test_indices.npy"
+
+    if not train_val_indices_path.exists() or not test_indices_path.exists():
+        train_val_indices, test_indices = train_test_split(indices, test_size=0.1, random_state=42)
+        np.save(train_val_indices_path, train_val_indices)
+        np.save(test_indices_path, test_indices)
+
+    train_val_indices = np.load(train_val_indices_path)
+    test_indices = np.load(test_indices_path)
+
     test_dataset = MouseBrainPointCloudDataset(numpy_point_cloud[test_indices],
                                                labels_int[test_indices],
                                                transform=transform)
@@ -107,7 +102,8 @@ def main(args):
 
         # Create the model
         model = PointCloudNet(num_classes=labels_count, num_neurons=numpy_point_cloud.shape[1])
-        wandb.watch(model)
+        if args.wandb:
+            wandb.watch(model)
 
         # Define loss function and optimizer
         criterion = nn.CrossEntropyLoss()
@@ -126,9 +122,11 @@ def main(args):
             acc_str = f"[Acc: {t_acc:0.2f}%|{v_acc:0.2f}%]"
 
             pbar_prefix = epoch_str + loss_str + acc_str
-            t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix)
-            v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion)
-        wandb.finish()
+            t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix, args)
+            v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion, args)
+
+        if args.wandb:
+            wandb.finish()
 
 
 if __name__ == "__main__":
@@ -137,4 +135,5 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for training and evaluation.")
     parser.add_argument("--kfold", default=5, type=int, help="Number of splits in KFold CV.")
     parser.add_argument("--lr", default=0.001, type=float, help="Learning rate for the Adam optimizer.")
+    parser.add_argument("--wandb", action="store_true", help="Log metrics into WANDB.")
     main(parser.parse_args())

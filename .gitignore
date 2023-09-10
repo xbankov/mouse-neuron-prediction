@@ -103,10 +103,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-data/
-raw_data/
-models/
-.idea/
-/6845348.zip
-!/wandb/
-/wandb/
+data/dataset/*
+!/data/dataset/.placeholder
+.idea/*

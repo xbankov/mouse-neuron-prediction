@@ -1,6 +1,6 @@
-import os
+import json
 from pathlib import Path
-from typing import Iterable, Any, Tuple
+from typing import Any
 
 import numpy as np
 from numpy import ndarray
@@ -10,52 +10,42 @@ from torch.utils.data import Dataset
 from tqdm.auto import tqdm
 
 
-def squash(array):
-    # Find unique values in the array
-    unique_values = np.unique(array)
-    # Create a mapping from original values to new values
-    value_to_index = {value: index for index, value in enumerate(unique_values)}
-    # Map the original array to new values
-    new_array = np.vectorize(value_to_index.get)(array)
-    return new_array
+def save_label_mappings(root_dir, label_to_int, int_to_label, image_to_idx):
+    with open(root_dir / "label_to_int.json", "w") as fp:
+        json.dump(label_to_int, fp)
+    with open(root_dir / "int_to_label.json", "w") as fp:
+        json.dump(int_to_label, fp)
+    with open(root_dir / "image_idx_to_label.json", "w") as fp:
+        json.dump(image_to_idx, fp)
 
 
-def voxelize(spatial, response):
-    # Squash position [4,4,4,5,6,6] -> [0,0,0,1,2,2]
-    xs = squash(spatial[:, 0])
-    ys = squash(spatial[:, 1])
-    zs = squash(spatial[:, 2])
+def load_label_mappings(root_dir):
+    with open(root_dir / "label_to_int.json", "r") as fp:
+        label_to_int = json.load(fp, object_hook=lambda d: {k: int(v) for k, v in d.items()})
+    with open(root_dir / "int_to_label.json", "r") as fp:
+        int_to_label = json.load(fp, object_hook=lambda d: {int(k): v for k, v in d.items()})
+    with open(root_dir / "image_idx_to_label.json", "r") as fp:
+        image_idx_to_label = json.load(fp, object_hook=lambda d: {int(k): v for k, v in d.items()})
+    return label_to_int, int_to_label, image_idx_to_label
 
-    # Calculate grid dimensions
-    grid_width = len(np.unique(xs))
-    grid_height = len(np.unique(ys))
-    grid_depth = len(np.unique(zs))
-
-    # Create an empty 3D grid
-    grid = np.zeros((grid_width, grid_height, grid_depth))
-
-    # Map points to the grid
-    for neuron_idx in range(spatial.shape[0]):
-        # Extract X, Y, Z coordinates from your point cloud data
-        x, y, z = xs[neuron_idx], ys[neuron_idx], zs[neuron_idx]
-
-        # Assign intensity value to a voxel value to indicate strength of a signal
-        grid[x, y, z] = response[neuron_idx]
-    return grid
+    # Labels transformation
 
 
-def encode_labels(labels_mat, raw_labels):
-    labels_names = np.array([a[0] for a in labels_mat["class_names"].flatten()])
-    labels_map = np.take(labels_names, labels_mat["class_assignment"]).ravel()
-    encoded_labels = np.array([np.where(labels_map == label)[0][0] for label in raw_labels])
-    return encoded_labels
+def transform_labels(labels_mat, root_dir):
+    labels = np.array([a[0] for a in labels_mat["class_names"].flatten()])
+    labels_count = len(np.unique(labels))
+    labels_int = list(map(int, np.arange(labels_count)))
+    label_to_int = dict(zip(labels, labels_int))
+    int_to_label = dict(zip(labels_int, labels))
 
+    image_labels = np.take(labels, labels_mat["class_assignment"]).ravel()
+    image_idx = list(map(int, np.arange(len(labels_mat["class_assignment"][0]))))
+    image_idx_to_label = dict(zip(image_idx, image_labels))
 
-def decode_labels(labels_mat, encoded_labels):
-    labels_names = np.array([a[0] for a in labels_mat["class_names"].flatten()])
-    labels_map = np.take(labels_names, labels_mat["class_assignment"]).ravel()
-    decoded_labels = labels_map[encoded_labels]
-    return decoded_labels
+    save_label_mappings(root_dir, label_to_int, int_to_label, image_idx_to_label)
+    label_to_int, int_to_label, image_idx_to_label = load_label_mappings(root_dir)
+
+    return image_idx_to_label, label_to_int, int_to_label
 
 
 def load_mat(path: Path) -> tuple[ndarray, ndarray]:
