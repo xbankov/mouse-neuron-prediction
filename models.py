@@ -21,6 +21,7 @@ class PointCloudNet(nn.Module):
         self.fc1 = nn.Linear(64 * channels * (self.num_neurons // (2 ** self.num_layers)), 512)
         self.fc2 = nn.Linear(512, num_classes)
         self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(0.5)  # Adjust the dropout rate as needed
 
     def forward(self, x):
         x = x.squeeze().permute(0, 2, 1)
@@ -40,6 +41,7 @@ class PointCloudNet(nn.Module):
 
         # Fully connected layers
         x = F.relu(self.fc1(x))
+        x = self.dropout(x)
         x = self.fc2(x)
 
         # Softmax activation returning probabilities for the class

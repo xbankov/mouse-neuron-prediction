@@ -83,7 +83,14 @@ def main(args):
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
 
     logger.info("Training ...")
+    # Show random accuracy for the comparison
     logger.info(f"Random accuracy is {1 / labels_count:0.2f}%")
+
+    # Show accuracy of always most frequent strategy for the comparison
+    _, frequencies = np.unique(labels_int[train_val_indices], return_counts=True)
+    random_accuracy_multi_class = max(frequencies) / sum(frequencies)
+    logger.info(f"Most frequent strategy accuracy is {random_accuracy_multi_class:0.2f}%")
+
     for fold, (train_index, val_index) in enumerate(kf.split(train_val_indices)):
         logger.info(f"K-Fold: {fold} starting ... ")
 
