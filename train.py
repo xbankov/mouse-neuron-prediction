@@ -4,12 +4,15 @@ import wandb
 from sklearn.metrics import accuracy_score, f1_score
 
 
-def train(model, criterion, optimizer, pbar, pbar_prefix, args):
+def train(model, criterion, optimizer, pbar, pbar_prefix, args, device):
     model.train()
     losses = []
     y_preds = []
     y_trues = []
     for _, (X, y) in enumerate(pbar):
+        # Move data to the GPU
+        X, y = X.to(device), y.to(device)
+
         optimizer.zero_grad()
         outputs = model(X)
         loss = criterion(outputs, y)

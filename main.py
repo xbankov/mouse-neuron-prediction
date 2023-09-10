@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchvision.transforms as transforms
@@ -20,6 +21,8 @@ from train import train
 
 
 def main(args):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     if args.wandb:
         wandb.init(project="neuroscience",
                    config={
@@ -100,8 +103,9 @@ def main(args):
         logging.debug(f"#batches training dataset: {len(train_dataloader)}")
         logging.debug(f"#batches validation dataset: {len(val_dataloader)}")
 
-        # Create the model
-        model = PointCloudNet(num_classes=labels_count, num_neurons=numpy_point_cloud.shape[1])
+        # Create the model and move the model to GPU if available
+        model = PointCloudNet(num_classes=labels_count, num_neurons=numpy_point_cloud.shape[1]).to(device)
+
         if args.wandb:
             wandb.watch(model)
 
@@ -118,12 +122,12 @@ def main(args):
             pbar: Any = tqdm(train_dataloader)
 
             epoch_str = f"[Epochs: {epoch} / {args.epochs}]"
-            loss_str = f"[Avg.Loss: {t_loss: 0.2f} | {v_loss: 0.2f}]"
+            loss_str = f"[Avg.Loss: {t_loss: 0.2f} |{v_loss: 0.2f}]"
             acc_str = f"[Acc: {t_acc:0.2f}%|{v_acc:0.2f}%]"
 
             pbar_prefix = epoch_str + loss_str + acc_str
-            t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix, args)
-            v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion, args)
+            t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix, args, device)
+            v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion, args, device)
 
         if args.wandb:
             wandb.finish()

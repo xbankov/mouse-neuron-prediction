@@ -4,13 +4,16 @@ import wandb
 from sklearn.metrics import accuracy_score, f1_score
 
 
-def evaluate(model, dataloader, criterion, args):
+def evaluate(model, dataloader, criterion, args, device):
     model.eval()
     losses = []
     y_preds = []
     y_trues = []
     with torch.no_grad():
         for i, (X, y) in enumerate(dataloader):
+            # Move data to the GPU
+            X, y = X.to(device), y.to(device)
+
             outputs = model(X)
             loss = criterion(outputs, y)
             losses.append(loss.item())
