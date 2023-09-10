@@ -75,7 +75,7 @@ class LinearPointCloudNet(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         x = self.dropout(x)
-        x = self.conv4(x)
+        x = self.fc4(x)
 
         # Softmax activation returning probabilities for the class
         logits = self.softmax(x)

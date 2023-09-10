@@ -18,7 +18,7 @@ from tqdm.auto import tqdm
 
 from dataset import load_mat, MouseBrainPointCloudDataset, transform_labels
 from evaluate import evaluate
-from models import PointCloudNet
+from models import PointCloudNet, LinearPointCloudNet
 from train import train
 
 
@@ -112,10 +112,16 @@ def main(args):
         logging.debug(f"#batches validation dataset: {len(val_dataloader)}")
 
         # Create the model and move the model to GPU if available
-        model = PointCloudNet(num_classes=labels_count,
-                              num_neurons=numpy_point_cloud.shape[1],
-                              channels=args.channels
-                              ).to(device)
+        model = None
+        if args.model == "linear":
+            model = LinearPointCloudNet(num_classes=labels_count,
+                                        num_neurons=numpy_point_cloud.shape[1]).to(device)
+
+        elif args.model == "conv":
+            model = PointCloudNet(num_classes=labels_count,
+                                  num_neurons=numpy_point_cloud.shape[1],
+                                  channels=args.channels
+                                  ).to(device)
 
         if args.wandb:
             wandb.watch(model)
@@ -150,11 +156,16 @@ def main(args):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
+
+    # Define the model choices
+    model_choices = ['linear', 'convolutional']
+
+    parser.add_argument('--model', choices=model_choices, default='linear',
+                        help='Choose a model from {}'.format(model_choices))
     parser.add_argument("--epochs", default=10, type=int, help="Number of epochs for model to train.")
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for training and evaluation.")
     parser.add_argument("--kfold", default=5, type=int, help="Number of splits in KFold CV.")
     parser.add_argument("--lr", default=0.001, type=float, help="Learning rate for the Adam optimizer.")
     parser.add_argument("--channels", default=4, type=int, help="Channel multiplayer for convolutional layers.")
-    parser.add_argument("--oversample", action="store_true", help="Oversample the dataset to balance classes.")
     parser.add_argument("--wandb", action="store_true", help="Log metrics into WANDB.")
     main(parser.parse_args())
