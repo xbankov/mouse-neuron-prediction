@@ -44,7 +44,7 @@ def main(args):
     labels_file: str = "stimuli_class_assignment_confident.mat"
     image_type: str = "natimg2800"
 
-    path = list(root_dir.glob(f"{image_type}_M*.mat"))[0]
+    path = list((root_dir / "dataset").glob(f"{image_type}_M*.mat"))[0]
     labels_mat = io.loadmat(str(root_dir / labels_file))
 
     logger.info("Loading data ...")
@@ -62,6 +62,7 @@ def main(args):
     test_indices_path = root_dir / "test_indices.npy"
 
     if not train_val_indices_path.exists() or not test_indices_path.exists():
+        logger.info("Splitting the dataset and saving the indices into files.")
         train_val_indices, test_indices = train_test_split(indices, test_size=0.1, random_state=42)
         np.save(train_val_indices_path, train_val_indices)
         np.save(test_indices_path, test_indices)
