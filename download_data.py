@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import zipfile
 from io import BytesIO
 
