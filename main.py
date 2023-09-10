@@ -139,7 +139,7 @@ def main(args):
             epoch_str = f"[Epochs: {epoch} / {args.epochs}]"
             loss_str = f"[Avg.Loss: {t_loss: 0.2f} |{v_loss: 0.2f}]"
             acc_str = f"[Acc: {t_acc:0.2f}%|{v_acc:0.2f}%]"
-            f1_str = f"[F1: {t_f1:0.2f}%|{v_f1:0.2f}%]"
+            f1_str = f"[F1: {t_f1:0.2f}|{v_f1:0.2f}]"
 
             pbar_prefix = epoch_str + loss_str + acc_str + f1_str
             t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix, args, device)
@@ -156,5 +156,6 @@ if __name__ == "__main__":
     parser.add_argument("--kfold", default=5, type=int, help="Number of splits in KFold CV.")
     parser.add_argument("--lr", default=0.001, type=float, help="Learning rate for the Adam optimizer.")
     parser.add_argument("--channels", default=4, type=int, help="Channel multiplayer for convolutional layers.")
+    parser.add_argument("--oversample", action="store_true", help="Oversample the dataset to balance classes.")
     parser.add_argument("--wandb", action="store_true", help="Log metrics into WANDB.")
     main(parser.parse_args())

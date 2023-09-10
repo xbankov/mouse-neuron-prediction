@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Tuple
 
 import numpy as np
+from imblearn.over_sampling import SMOTE
 from numpy import ndarray
 from scipy import io
 from scipy.sparse.linalg import eigsh
@@ -104,10 +105,15 @@ def load_mat(path: Path) -> Tuple[ndarray, ndarray]:
 
 
 class MouseBrainPointCloudDataset(Dataset):
-    def __init__(self, data, labels, transform=None):
+    def __init__(self, data, labels, transform=None, oversample=True):
         self.transform = transform
         self.data = data
         self.labels = labels
+
+        # Perform oversampling here (e.g., using SMOTE)
+        if oversample:
+            oversampler = SMOTE(random_state=42)
+            self.data, self.labels = oversampler.fit_resample(data, labels)
 
     def __len__(self):
         return len(self.data)
