@@ -14,11 +14,11 @@ class PointCloudNet(nn.Module):
         self.conv1 = nn.Conv1d(4, 8 * channels, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv1d(8 * channels, 16 * channels, kernel_size=3, stride=1, padding=1)
         self.conv3 = nn.Conv1d(16 * channels, 32 * channels, kernel_size=3, stride=1, padding=1)
-        self.conv4 = nn.Conv1d(32 * channels, 32 * channels, kernel_size=3, stride=1, padding=1)
+        self.conv4 = nn.Conv1d(32 * channels, 64 * channels, kernel_size=3, stride=1, padding=1)
         self.pool = nn.MaxPool1d(kernel_size=2, stride=2)
 
         # Fully connected layers
-        self.fc1 = nn.Linear(32 * (self.num_neurons // (2 ** self.num_layers)), 512)
+        self.fc1 = nn.Linear(64 * channels * (self.num_neurons // (2 ** self.num_layers)), 512)
         self.fc2 = nn.Linear(512, num_classes)
         self.softmax = nn.Softmax(dim=1)
 
