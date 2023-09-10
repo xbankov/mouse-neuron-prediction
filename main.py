@@ -1,3 +1,5 @@
+import json
+from argparse import ArgumentParser
 import logging
 from pathlib import Path
 from typing import Any
@@ -17,14 +19,15 @@ from evaluate import evaluate
 from models import PointCloudNet
 from train import train
 
-if __name__ == "__main__":
-    wandb.init(project="neuroscience",
-               config={
-                   "learning_rate": 0.001,
-                   "architecture": "PointCloudNet",
-                   "dataset": "MouseLand",
-                   "epochs": 10,
-               })
+
+def main(args):
+    if args.wandb:
+        wandb.init(project="neuroscience",
+                   config={
+                       "architecture": "PointCloudNet",
+                       "dataset": "MouseLand",
+                       "epochs": args.epochs,
+                   })
 
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -37,9 +40,9 @@ if __name__ == "__main__":
 
     # Load your 3D data and labels
     root_dir: Path = Path("data")
+    # https://github.com/MouseLand/stringer-pachitariu-et-al-2018b/blob/master/classes/stimuli_class_assignment_confident.mat
     labels_file: str = "stimuli_class_assignment_confident.mat"
     image_type: str = "natimg2800"
-    number_of_stimuli: int = 2800
 
     path = list(root_dir.glob(f"{image_type}_M*.mat"))[0]
     labels_mat = io.loadmat(str(root_dir / labels_file))
@@ -52,9 +55,14 @@ if __name__ == "__main__":
     # Labels transformation
     labels = np.array([a[0] for a in labels_mat["class_names"].flatten()])
     labels_count = len(np.unique(labels))
-    labels_int = np.arange(labels_count)
+    labels_int = list(map(int, np.arange(labels_count)))
     label_to_int = dict(zip(labels, labels_int))
     int_to_label = dict(zip(labels_int, labels))
+
+    with open(root_dir / "label_to_int.json", "w") as fp:
+        json.dump(label_to_int, fp)
+    with open(root_dir / "int_to_label.json", "w") as fp:
+        json.dump(int_to_label, fp)
 
     image_labels = np.take(labels, labels_mat["class_assignment"]).ravel()
     image_idx = np.arange(len(labels_mat["class_assignment"][0]))
@@ -71,10 +79,11 @@ if __name__ == "__main__":
                                                transform=transform)
 
     # # K-fold cross-validation on 90% of data
-    k = 2
+    k = args.kfold
     kf = KFold(n_splits=k, shuffle=True, random_state=42)
 
     logger.info("Training ...")
+    logger.info(f"Random accuracy is {1 / labels_count:0.2f}%")
     for fold, (train_index, val_index) in enumerate(kf.split(train_val_indices)):
         logger.info(f"K-Fold: {fold} starting ... ")
 
@@ -90,9 +99,8 @@ if __name__ == "__main__":
         logging.debug(f"Size of the validation dataset: {len(val_dataset)}")
 
         # Create a data loader
-        batch_size = 32
-        train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
+        train_dataloader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        val_dataloader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True)
 
         logging.debug(f"#batches training dataset: {len(train_dataloader)}")
         logging.debug(f"#batches validation dataset: {len(val_dataloader)}")
@@ -103,21 +111,30 @@ if __name__ == "__main__":
 
         # Define loss function and optimizer
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.001)
+        optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-        # Training loop
-        num_epochs = 2
-        train_loss = np.nan
-        val_loss = np.nan
+        t_acc = 0.0
+        v_acc = 0.0
 
-        for epoch in range(num_epochs):
+        t_loss = 0.0
+        v_loss = 0.0
+        for epoch in range(args.epochs):
             pbar: Any = tqdm(train_dataloader)
-            losses, accuracy, f1 = train(model, criterion, optimizer, pbar)
-            val_losses, val_accuracy, val_f1 = evaluate(model, val_dataloader, criterion)
 
-            pbar.set_description(
-                f"Epochs[{epoch}/{num_epochs}] | "
-                f"Train F1 Score: {f1:0.2f} | "
-                f"Validation F1 Score: {val_f1:0.2f}")
+            epoch_str = f"[Epochs: {epoch} / {args.epochs}]"
+            loss_str = f"[Avg.Loss: {t_loss: 0.2f} | {v_loss: 0.2f}]"
+            acc_str = f"[Acc: {t_acc:0.2f}%|{v_acc:0.2f}%]"
 
-    wandb.finish()
+            pbar_prefix = epoch_str + loss_str + acc_str
+            t_loss, t_acc, t_f1 = train(model, criterion, optimizer, pbar, pbar_prefix)
+            v_loss, v_acc, v_f1 = evaluate(model, val_dataloader, criterion)
+        wandb.finish()
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--epochs", default=10, type=int, help="Number of epochs for model to train.")
+    parser.add_argument("--batch_size", default=32, type=int, help="Batch size for training and evaluation.")
+    parser.add_argument("--kfold", default=5, type=int, help="Number of splits in KFold CV.")
+    parser.add_argument("--lr", default=0.001, type=float, help="Learning rate for the Adam optimizer.")
+    main(parser.parse_args())
